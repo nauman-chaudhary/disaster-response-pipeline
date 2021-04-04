@@ -1,16 +1,59 @@
 import sys
+import pandas as pd
+from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
-    pass
+    """
+    This function load data from given filepaths
+
+    Parameters
+    messages_filepath: str, path to file
+    categories_filepath: str, path to file
+
+    Returns
+    a pandas DataFrame with merged messages with categories
+    """
+    messages = pd.read_csv(messages_filepath)
+    categories = pd.read_csv(categories_filepath)
+    df = messages.merge(categories, on='id')
+    return df
 
 
 def clean_data(df):
-    pass
+    """
+    This function cleans data of the provided DataFrame and transforms categories
+
+    Parameters
+    df: pandas DataFrame
+
+    Returns
+    a cleaned pandas DataFrame
+    """
+    # Split the categories
+    categories = df['categories'].str.split(pat=';',expand=True)
+    
+    #Fix the categories columns name
+    row = categories.iloc[[1]]
+    category_colnames = [category_name.split('-')[0] for category_name in row.values[0]]
+    categories.columns = category_colnames
+    
+    for column in categories:
+        categories[column] = categories[column].str[-1]
+        categories[column] = categories[column].astype(int)
+    
+    df.drop('categories',axis=1, inplace=True)
+    df = pd.concat([df,categories],axis=1)
+    df.drop_duplicates(inplace=True)
+    
+    return df
 
 
 def save_data(df, database_filename):
-    pass  
+    """Saves DataFrame to SQLite database"""
+    name = 'sqlite:///' + database_filename
+    engine = create_engine(name)
+    df.to_sql('Disasters', engine, index=False)
 
 
 def main():
