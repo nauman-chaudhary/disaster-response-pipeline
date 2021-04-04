@@ -1,24 +1,86 @@
 import sys
+from sqlalchemy import create_engine
+import pandas as pd
+import re
+import pickle
+import nltk
+import numpy as np
+from sklearn.pipeline import Pipeline
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.metrics import classification_report
+
 
 
 def load_data(database_filepath):
-    pass
+    """Load the SQLite database from the path"""
+    
+    engine = create_engine('sqlite:///' + database_filepath)
+    table_name = "Disasters"
+    df = pd.read_sql_table(table_name,engine)
+    
+    #Removing child_alone as it only contains 0
+    df = df.drop(['child_alone'],axis=1)
+    
+    
+    X = df['message']
+    y = df[df.columns[4:]]
+    
+    category_names = y.columns
+    
+    return X, y, category_names
 
 
 def tokenize(text):
-    pass
+    """tokenize and transform input text. Return cleaned text"""
+    
+    # cleaning urls
+    url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    detected_urls = re.findall(url_regex, text)
+    for url in detected_urls:
+        text = text.replace(url, "urlplaceholder")
+    
+    # Extract the word tokens from the provided text
+    tokens = nltk.word_tokenize(text)
+    
+    #Lemmanitizer to remove inflectional and derivationally related forms of a word
+    lemmatizer = nltk.WordNetLemmatizer()
+
+    # List of clean tokens
+    clean_tokens = [lemmatizer.lemmatize(w).lower().strip() for w in tokens]
+    return clean_tokens
+
+
 
 
 def build_model():
-    pass
+    """Return Grid Search model with pipeline and Classifier"""
+    
+    model = MultiOutputClassifier(RandomForestClassifier())
+
+    pipeline = Pipeline([
+        ('vect', CountVectorizer(tokenizer=tokenize)),
+        ('tfidf', TfidfTransformer()),
+        ('clf', model)
+        ])
+
+    parameters = {'clf__estimator__max_depth': [10, 50, None],
+              'clf__estimator__min_samples_leaf':[2, 5, 10]}
+
+    cv = GridSearchCV(pipeline, parameters)
+    return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    pass
+    y_pred = model.predict(X_test) 
+    print(classification_report(np.hstack(Y_test.values),np.hstack(y_pred)))
 
 
 def save_model(model, model_filepath):
-    pass
+    """Save model as a pickle file"""
+    pickle.dump(model, open(model_filepath, 'wb'))
 
 
 def main():
@@ -30,6 +92,7 @@ def main():
         
         print('Building model...')
         model = build_model()
+        
         
         print('Training model...')
         model.fit(X_train, Y_train)
