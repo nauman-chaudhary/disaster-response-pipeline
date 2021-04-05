@@ -53,7 +53,7 @@ def save_data(df, database_filename):
     """Saves DataFrame to SQLite database"""
     name = 'sqlite:///' + database_filename
     engine = create_engine(name)
-    df.to_sql('Disasters', engine, index=False)
+    df.to_sql('Disasters', engine, index=False, if_exists='replace')
 
 
 def main():
