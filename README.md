@@ -26,4 +26,4 @@ It's one of many examples where Data Science can help humans in the hour of need
 - **models/train_classifier.py** : ML pipeline which loads data, trains a model, and pickles the trained model for later use.
 - **app/run.py** : This file is used to launch the Flask web app that serves the trained model.
 
-Really grateful to my trainers for the course and the stackoverflow community.
+Really grateful to my trainers for the course, figure eight for the data and the stackoverflow community

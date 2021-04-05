@@ -74,8 +74,11 @@ def build_model():
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
-    y_pred = model.predict(X_test) 
-    print(classification_report(np.hstack(Y_test.values),np.hstack(y_pred)))
+    y_pred = model.predict(X_test)
+    Y_pred = pd.DataFrame(data=y_pred, 
+                          index=Y_test.index, 
+                          columns=category_names)
+    print(classification_report(np.hstack(Y_test),np.hstack(Y_pred), target_names=category_names))
 
 
 def save_model(model, model_filepath):
